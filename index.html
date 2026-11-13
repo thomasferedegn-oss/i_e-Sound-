@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Long 'I' (i_e) Phonics Adventure!</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom animations and base styles */
+        body { font-family: 'Inter', system-ui, sans-serif; }
+        .bounce-in { animation: bounceIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .fade-in { animation: fadeIn 0.4s ease-in-out; }
+        @keyframes bounceIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        @keyframes fadeIn {
+            0% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+        .highlight-phoneme {
+            color: #ef4444; /* Tailwind red-500 */
+            font-weight: 900;
+            font-size: 1.2em;
+            text-shadow: 1px 1px 0 #fee2e2;
+        }
+        .phoneme-badge {
+            background-color: #fef08a; /* Yellow-200 */
+            border: 2px solid #eab308; /* Yellow-500 */
+            color: #b45309; /* Yellow-700 */
+            padding: 0.2rem 0.8rem;
+            border-radius: 9999px;
+            font-weight: bold;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        /* Lock screen to prevent scrolling while playing mini-games if needed */
+        .game-container {
+            min-height: 400px;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-100 via-purple-100 to-pink-100 min-h-screen text-gray-800 p-2 sm:p-4 md:p-8">
+
+    <!-- Main App Container -->
+    <div class="max-w-5xl mx-auto bg-white rounded-3xl shadow-2xl overflow-hidden border-4 border-white">
+        
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-purple-500 to-pink-500 p-6 text-white text-center rounded-t-2xl relative shadow-md z-10">
+            <h1 class="text-3xl sm:text-4xl font-extrabold tracking-wide mb-2 drop-shadow-md">
+                ✨ Long 'I' (i_e) Phonics Adventure ✨
+            </h1>
+            <p class="text-lg font-medium opacity-90">Let's learn the <span class="text-yellow-300 font-bold text-2xl">/i_e/</span> and <span class="text-yellow-300 font-bold text-2xl">/አይ/</span> sounds!</p>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="flex flex-wrap justify-center bg-gray-50 border-b-2 border-gray-100 p-2 gap-2 sm:gap-4">
+            <button onclick="setMode('flashcards')" id="tab-flashcards" class="nav-tab px-4 py-2 rounded-xl font-bold transition-colors bg-purple-100 text-purple-700 border-2 border-purple-300 hover:bg-purple-200">🃏 Flashcards</button>
+            <button onclick="setMode('listenMatch')" id="tab-listenMatch" class="nav-tab px-4 py-2 rounded-xl font-bold transition-colors bg-white text-gray-500 hover:bg-gray-100 border-2 border-transparent">🎧 Listen & Match</button>
+            <button onclick="setMode('translation')" id="tab-translation" class="nav-tab px-4 py-2 rounded-xl font-bold transition-colors bg-white text-gray-500 hover:bg-gray-100 border-2 border-transparent">🇪🇹 Amharic Match</button>
+            <button onclick="setMode('phoneme')" id="tab-phoneme" class="nav-tab px-4 py-2 rounded-xl font-bold transition-colors bg-white text-gray-500 hover:bg-gray-100 border-2 border-transparent">🧩 Missing Sound</button>
+        </div>
+
+        <!-- Game Area Container -->
+        <div id="game-area" class="p-4 sm:p-8 game-container flex flex-col items-center justify-center relative">
+            <!-- Content injected here via JS -->
+        </div>
+
+    </div>
+
+    <!-- Audio initialization helper -->
+    <div id="audio-init-overlay" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center fade-in cursor-pointer" onclick="initAudioAndStart()">
+        <div class="bg-white p-8 rounded-2xl text-center shadow-2xl transform hover:scale-105 transition-transform max-w-sm mx-4">
+            <div class="text-6xl mb-4">🔊</div>
+            <h2 class="text-2xl font-bold text-gray-800 mb-2">Ready to Play?</h2>
+            <p class="text-gray-600 mb-6">Tap anywhere to enable sound and start the game!</p>
+            <button class="bg-green-500 text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-green-600 transition-colors w-full">Start Adventure!</button>
+        </div>
+    </div>
+
+<script>
+    // --- Data: Exhaustive Dictionary ---
+    const words = [
+        { eng: "Ride", amh: "መጋለብ / መንዳት", pron: "Megaleb / Mendat", fam: "-ide" },
+        { eng: "Hide", amh: "መደበቅ", pron: "Medebek", fam: "-ide" },
+        { eng: "Side", amh: "ጎን", pron: "Gon", fam: "-ide" },
+        { eng: "Wide", amh: "ሰፊ", pron: "Sefi", fam: "-ide" },
+        { eng: "Tide", amh: "ማዕበል", pron: "Ma'ebel", fam: "-ide" },
+        { eng: "Bike", amh: "ብስክሌት", pron: "Biskilet", fam: "-ike" },
+        { eng: "Like", amh: "መውደድ", pron: "Mewded", fam: "-ike" },
+        { eng: "Hike", amh: "በእግር መጓዝ", pron: "Be'igir megwaz", fam: "-ike" },
+        { eng: "Time", amh: "ጊዜ", pron: "Gize", fam: "-ime" },
+        { eng: "Dime", amh: "ሳንቲም", pron: "Santim", fam: "-ime" },
+        { eng: "Lime", amh: "ሎሚ", pron: "Lomi", fam: "-ime" },
+        { eng: "Line", amh: "መስመር", pron: "Mesmer", fam: "-ine" },
+        { eng: "Nine", amh: "ዘጠኝ", pron: "Zetegn", fam: "-ine" },
+        { eng: "Mine", amh: "የኔ", pron: "Yene", fam: "-ine" },
+        { eng: "Pine", amh: "የጥድ ዛፍ", pron: "Yet'id zaf", fam: "-ine" },
+        { eng: "Vine", amh: "ሀረግ", pron: "Hareg", fam: "-ine" },
+        { eng: "Pipe", amh: "ቱቦ", pron: "Tubo", fam: "-ipe" },
+        { eng: "Wipe", amh: "መጥረግ", pron: "Metreg", fam: "-ipe" },
+        { eng: "Ripe", amh: "የበሰለ", pron: "Yebesele", fam: "-ipe" },
+        { eng: "Bite", amh: "መንከስ", pron: "Menkes", fam: "-ite" },
+        { eng: "Kite", amh: "ካይት", pron: "Kayit", fam: "-ite" },
+        { eng: "White", amh: "ነጭ", pron: "Nech'", fam: "-ite" },
+        { eng: "Site", amh: "ቦታ", pron: "Bota", fam: "-ite" },
+        { eng: "Dive", amh: "ጠልቆ መግባት", pron: "T'elko megbat", fam: "-ive" },
+        { eng: "Five", amh: "አምስት", pron: "Amist", fam: "-ive" },
+        { eng: "Hive", amh: "የንብ ቀፎ", pron: "Yenib kefo", fam: "-ive" },
+        { eng: "Drive", amh: "መንዳት", pron: "Mendat", fam: "-ive" },
+        { eng: "Ice", amh: "በረዶ", pron: "Beredo", fam: "-ice" },
+        { eng: "Mice", amh: "አይጦች", pron: "Ayt'och", fam: "-ice" },
+        { eng: "Rice", amh: "ሩዝ", pron: "Ruz", fam: "-ice" },
+        { eng: "Dice", amh: "ዳይስ", pron: "Dayis", fam: "-ice" },
+        { eng: "Smile", amh: "ፈገግታ", pron: "Fegegta", fam: "-ile" },
+        { eng: "Mile", amh: "ማይል / ርቀት", pron: "Mayil", fam: "-ile" },
+        { eng: "File", amh: "ፋይል / ማህደር", pron: "Fayil", fam: "-ile" }
+    ];
+
+    // --- State & Config ---
+    let currentMode = 'flashcards';
+    let currentWordIndex = 0; // For flashcards
+    let synth = window.speechSynthesis;
+    let gbVoice = null;
+    let isAudioInitialized = false;
+
+    // --- Audio Setup ---
+    function populateVoices() {
+        const voices = synth.getVoices();
+        // Priority: Google UK Female -> UK English Female -> Any en-GB Female -> Any en-GB
+        gbVoice = voices.find(v => v.name.includes('Google UK English Female')) || 
+                  voices.find(v => v.name.includes('UK English Female') && v.lang === 'en-GB') ||
+                  voices.find(v => v.lang === 'en-GB' && v.name.toLowerCase().includes('female')) ||
+                  voices.find(v => v.lang === 'en-GB') ||
+                  voices.find(v => v.lang.startsWith('en'));
+    }
+
+    if (speechSynthesis.onvoiceschanged !== undefined) {
+        speechSynthesis.onvoiceschanged = populateVoices;
+    }
+
+    function initAudioAndStart() {
+        if (!isAudioInitialized) {
+            // Unlock audio context by playing a silent utterance
+            let utterance = new SpeechSynthesisUtterance('');
+            synth.speak(utterance);
+            isAudioInitialized = true;
+            document.getElementById('audio-init-overlay').style.display = 'none';
+            setMode('flashcards'); // Start app
+        }
+    }
+
+    function playAudio(text, rate = 0.9) {
+        if (!isAudioInitialized) return;
+        synth.cancel(); // stop current audio
+        let utterance = new SpeechSynthesisUtterance(text);
+        if (gbVoice) utterance.voice = gbVoice;
+        utterance.rate = rate; // Slightly slower for kids
+        utterance.pitch = 1.2; // Slightly higher/friendly pitch
+        synth.speak(utterance);
+    }
+
+    // --- Utility Functions ---
+    // Returns image placeholder URL. We use placehold.co to reliably load fallback images.
+    function getImageUrl(wordStr) {
+        // Here you can replace this logic to load real URLs from an external source or relative folder
+        // Example fallback: return `images/${wordStr.toLowerCase()}.png`
+        const colors = ['FFB6C1', 'ADD8E6', '98FB98', 'FFD700', 'DDA0DD'];
+        const c = colors[Math.floor(Math.random() * colors.length)];
+        return `https://placehold.co/400x300/${c}/333?text=${wordStr}`;
+    }
+
+    function highlightI_E(text) {
+        // Highlights 'i' and 'e' in English separated by one consonant, and 'አይ' in Amharic
+        let html = text.replace(/(i)([a-z])(e)/gi, '<span class="highlight-phoneme">$1</span>$2<span class="highlight-phoneme">$3</span>');
+        html = html.replace(/(አይ)/g, '<span class="highlight-phoneme">$1</span>');
+        return html;
+    }
+
+    function shuffleArray(array) {
+        const arr = [...array];
+        for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+    }
+
+    function getAudioButtonHTML(textToSpeak, size = 'large') {
+        const sizeClasses = size === 'large' ? 'p-3 text-3xl' : 'p-2 text-xl';
+        return `
+            <button onclick="playAudio('${textToSpeak.replace(/'/g, "\\'")}')" 
+                    class="bg-blue-400 hover:bg-blue-500 text-white rounded-full ${sizeClasses} shadow-md transition-transform hover:scale-110 focus:outline-none focus:ring-4 focus:ring-blue-300 ml-2" 
+                    title="Listen">
+                🔊
+            </button>
+        `;
+    }
+
+    // --- Core Navigation ---
+    function setMode(mode) {
+        currentMode = mode;
+        
+        // Reset tabs UI
+        document.querySelectorAll('.nav-tab').forEach(tab => {
+            tab.className = "nav-tab px-4 py-2 rounded-xl font-bold transition-colors bg-white text-gray-500 hover:bg-gray-100 border-2 border-transparent";
+        });
+        const activeTab = document.getElementById(`tab-${mode}`);
+        if(activeTab) activeTab.className = "nav-tab px-4 py-2 rounded-xl font-bold transition-colors bg-purple-100 text-purple-700 border-2 border-purple-300 hover:bg-purple-200";
+
+        const gameArea = document.getElementById('game-area');
+        gameArea.innerHTML = ''; // Clear current
+
+        switch(mode) {
+            case 'flashcards': renderFlashcards(); break;
+            case 'listenMatch': renderListenMatch(); break;
+            case 'translation': renderTranslationMatch(); break;
+            case 'phoneme': renderPhonemeMissing(); break;
+        }
+    }
+
+    // --- Mode 1: Interactive Flashcards ---
+    function renderFlashcards() {
+        const wordObj = words[currentWordIndex];
+        const area = document.getElementById('game-area');
+        
+        area.innerHTML = `
+            <div class="fade-in w-full max-w-lg mx-auto bg-white rounded-3xl shadow-xl border-4 border-gray-100 overflow-hidden flex flex-col">
+                <div class="text-center pt-6 pb-2">
+                    <div class="phoneme-badge text-lg">
+                        <span class="highlight-phoneme">/i_e/</span> = <span class="highlight-phoneme">/አይ/</span>
+                    </div>
+                </div>
+                
+                <div class="relative bg-gray-100 aspect-video flex items-center justify-center overflow-hidden">
+                    <img src="${getImageUrl(wordObj.eng)}" alt="${wordObj.eng}" class="object-cover w-full h-full opacity-90 transition-transform duration-500 hover:scale-105" onerror="this.src='https://placehold.co/400x300/eee/999?text=No+Image'">
+                </div>
+
+                <div class="p-6 text-center">
+                    <div class="flex items-center justify-center mb-4">
+                        <h2 class="text-5xl font-black text-gray-800 tracking-tight capitalize">${highlightI_E(wordObj.eng)}</h2>
+                        ${getAudioButtonHTML(wordObj.eng, 'large')}
+                    </div>
+                    
+                    <div class="bg-yellow-50 rounded-xl p-4 mt-4 border-2 border-yellow-200">
+                        <h3 class="text-3xl font-bold text-gray-800 mb-1">${highlightI_E(wordObj.amh)}</h3>
+                        <p class="text-gray-500 font-medium">${wordObj.pron}</p>
+                    </div>
+                </div>
+
+                <div class="bg-gray-50 p-4 flex justify-between items-center border-t border-gray-200">
+                    <button onclick="changeFlashcard(-1)" class="px-6 py-2 bg-gray-200 text-gray-700 rounded-full font-bold hover:bg-gray-300 transition-colors">⬅️ Prev</button>
+                    <span class="text-sm font-bold text-gray-400">${currentWordIndex + 1} / ${words.length}</span>
+                    <button onclick="changeFlashcard(1)" class="px-6 py-2 bg-green-500 text-white rounded-full font-bold hover:bg-green-600 transition-colors shadow-md">Next ➡️</button>
+                </div>
+            </div>
+        `;
+        playAudio(wordObj.eng); // auto play on load
+    }
+
+    function changeFlashcard(direction) {
+        currentWordIndex += direction;
+        if (currentWordIndex < 0) currentWordIndex = words.length - 1;
+        if (currentWordIndex >= words.length) currentWordIndex = 0;
+        renderFlashcards();
+    }
+
+    // --- Mode 2: Listen & Match Image ---
+    function renderListenMatch() {
+        const area = document.getElementById('game-area');
+        
+        // Pick 1 correct and 3 incorrect
+        let options = shuffleArray(words).slice(0, 4);
+        const correctTarget = options[Math.floor(Math.random() * options.length)];
+
+        area.innerHTML = `
+            <div class="fade-in w-full max-w-4xl text-center">
+                <div class="phoneme-badge text-lg mb-6">
+                    <span class="highlight-phoneme">/i_e/</span> = <span class="highlight-phoneme">/አይ/</span>
+                </div>
+                
+                <h2 class="text-3xl font-bold text-gray-700 mb-6 flex items-center justify-center gap-4">
+                    Listen and click the correct image!
+                    <button onclick="playAudio('${correctTarget.eng}')" class="bg-pink-500 hover:bg-pink-600 text-white rounded-full p-4 text-4xl shadow-lg transition-transform hover:scale-110 animate-pulse">
+                        🔊 Hear Word
+                    </button>
+                </h2>
+
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-6 px-4">
+                    ${options.map((opt, idx) => `
+                        <div onclick="checkListenMatch(this, '${opt.eng}', '${correctTarget.eng}')" 
+                             class="match-card bg-white rounded-2xl p-3 shadow-md border-4 border-transparent cursor-pointer transition-all hover:-translate-y-2 hover:shadow-xl group">
+                            <img src="${getImageUrl(opt.eng)}" alt="Option" class="w-full h-32 object-cover rounded-xl mb-3">
+                            <p class="text-xl font-bold text-gray-300 group-hover:text-gray-400 transition-colors">???</p>
+                        </div>
+                    `).join('')}
+                </div>
+                <div id="lm-feedback" class="h-16 mt-8 text-2xl font-bold flex items-center justify-center"></div>
+            </div>
+        `;
+        
+        setTimeout(() => playAudio(correctTarget.eng), 500); // Auto play initial sound
+    }
+
+    function checkListenMatch(el, selectedEng, targetEng) {
+        // Prevent multiple clicks if already correct
+        if (document.querySelector('.match-correct')) return;
+
+        const isCorrect = selectedEng === targetEng;
+        const feedback = document.getElementById('lm-feedback');
+
+        if (isCorrect) {
+            el.classList.add('match-correct', 'border-green-500', 'bg-green-50');
+            el.querySelector('p').innerHTML = highlightI_E(selectedEng);
+            el.querySelector('p').classList.replace('text-gray-300', 'text-green-700');
+            feedback.innerHTML = `<span class="text-green-600 bounce-in">🎉 Excellent! That is a ${selectedEng}! 🎉</span>`;
+            playAudio("Correct! " + selectedEng);
+            setTimeout(renderListenMatch, 2500);
+        } else {
+            el.classList.add('border-red-400', 'animate-shake');
+            feedback.innerHTML = `<span class="text-red-500">Oops! Try again.</span>`;
+            playAudio("Try again");
+            setTimeout(() => {
+                el.classList.remove('border-red-400', 'animate-shake');
+                feedback.innerHTML = '';
+            }, 1000);
+        }
+    }
+
+    // --- Mode 3: Amharic vs English Match ---
+    let transSelectedEng = null;
+    let transSelectedAmh = null;
+
+    function renderTranslationMatch() {
+        const area = document.getElementById('game-area');
+        
+        // Pick 4 pairs
+        const pairs = shuffleArray(words).slice(0, 4);
+        const engCol = [...pairs];
+        const amhCol = shuffleArray(pairs);
+
+        transSelectedEng = null;
+        transSelectedAmh = null;
+
+        area.innerHTML = `
+            <div class="fade-in w-full max-w-4xl text-center">
+                <div class="phoneme-badge text-lg mb-4">
+                    Match English <span class="highlight-phoneme">/i_e/</span> with Amharic <span class="highlight-phoneme">/አይ/</span>
+                </div>
+                <h2 class="text-2xl font-bold text-gray-700 mb-8">Tap an English word, then tap its Amharic meaning!</h2>
+
+                <div class="flex flex-col sm:flex-row justify-center gap-8 sm:gap-16 px-4">
+                    <!-- English Column -->
+                    <div class="flex flex-col gap-4 w-full sm:w-1/2">
+                        <h3 class="text-xl font-black text-blue-600 uppercase tracking-wider mb-2">English</h3>
+                        ${engCol.map(p => `
+                            <button id="eng-${p.eng}" onclick="selectTransEng('${p.eng}', this)" 
+                                    class="trans-btn-eng bg-blue-50 text-blue-800 text-2xl font-bold py-4 px-6 rounded-2xl shadow-sm border-2 border-blue-200 hover:bg-blue-100 transition-all flex justify-between items-center">
+                                <span>${highlightI_E(p.eng)}</span>
+                                ${getAudioButtonHTML(p.eng, 'small')}
+                            </button>
+                        `).join('')}
+                    </div>
+
+                    <!-- Amharic Column -->
+                    <div class="flex flex-col gap-4 w-full sm:w-1/2">
+                        <h3 class="text-xl font-black text-yellow-600 uppercase tracking-wider mb-2">Amharic</h3>
+                        ${amhCol.map(p => `
+                            <button id="amh-${p.eng}" onclick="selectTransAmh('${p.eng}', this)" 
+                                    class="trans-btn-amh bg-yellow-50 text-yellow-800 text-2xl font-bold py-4 px-6 rounded-2xl shadow-sm border-2 border-yellow-200 hover:bg-yellow-100 transition-all text-center">
+                                ${highlightI_E(p.amh)}
+                            </button>
+                        `).join('')}
+                    </div>
+                </div>
+                
+                <div id="trans-feedback" class="h-12 mt-6 text-2xl font-bold flex items-center justify-center"></div>
+                <div id="trans-next" class="mt-4 hidden">
+                    <button onclick="renderTranslationMatch()" class="bg-green-500 text-white text-xl font-bold py-3 px-8 rounded-full shadow-lg hover:bg-green-600 transition-transform hover:scale-105 bounce-in">Play Again!</button>
+                </div>
+            </div>
+        `;
+    }
+
+    function selectTransEng(wordEng, el) {
+        if (el.classList.contains('matched')) return;
+        
+        // Reset previously selected eng
+        document.querySelectorAll('.trans-btn-eng:not(.matched)').forEach(b => {
+            b.classList.remove('ring-4', 'ring-blue-400', 'bg-blue-200');
+        });
+        
+        transSelectedEng = wordEng;
+        el.classList.add('ring-4', 'ring-blue-400', 'bg-blue-200');
+        playAudio(wordEng);
+        checkTransMatch();
+    }
+
+    function selectTransAmh(wordEngId, el) {
+        if (el.classList.contains('matched')) return;
+
+        // Reset previously selected amh
+        document.querySelectorAll('.trans-btn-amh:not(.matched)').forEach(b => {
+            b.classList.remove('ring-4', 'ring-yellow-400', 'bg-yellow-200');
+        });
+
+        transSelectedAmh = wordEngId;
+        el.classList.add('ring-4', 'ring-yellow-400', 'bg-yellow-200');
+        checkTransMatch();
+    }
+
+    function checkTransMatch() {
+        if (!transSelectedEng || !transSelectedAmh) return;
+
+        const engEl = document.getElementById(`eng-${transSelectedEng}`);
+        const amhEl = document.getElementById(`amh-${transSelectedAmh}`);
+        const feedback = document.getElementById('trans-feedback');
+
+        if (transSelectedEng === transSelectedAmh) {
+            // Match!
+            engEl.classList.add('matched', 'bg-green-100', 'border-green-400', 'text-green-800', 'opacity-50', 'pointer-events-none');
+            engEl.classList.remove('ring-4', 'bg-blue-200');
+            
+            amhEl.classList.add('matched', 'bg-green-100', 'border-green-400', 'text-green-800', 'opacity-50', 'pointer-events-none');
+            amhEl.classList.remove('ring-4', 'bg-yellow-200');
+
+            playAudio("Match!");
+            feedback.innerHTML = `<span class="text-green-500">Correct!</span>`;
+            setTimeout(() => { feedback.innerHTML = ''; }, 1000);
+            
+            // Check win condition
+            if (document.querySelectorAll('.trans-btn-eng.matched').length === 4) {
+                feedback.innerHTML = `<span class="text-green-600 bounce-in">🎉 Fantastic Job! All matched! 🎉</span>`;
+                document.getElementById('trans-next').classList.remove('hidden');
+            }
+        } else {
+            // Mismatch
+            engEl.classList.add('animate-shake', 'bg-red-100', 'border-red-400');
+            amhEl.classList.add('animate-shake', 'bg-red-100', 'border-red-400');
+            feedback.innerHTML = `<span class="text-red-500">Not quite, try again!</span>`;
+            
+            setTimeout(() => {
+                engEl.classList.remove('animate-shake', 'bg-red-100', 'border-red-400', 'ring-4', 'bg-blue-200');
+                amhEl.classList.remove('animate-shake', 'bg-red-100', 'border-red-400', 'ring-4', 'bg-yellow-200');
+                feedback.innerHTML = '';
+            }, 1000);
+        }
+
+        transSelectedEng = null;
+        transSelectedAmh = null;
+    }
+
+    // --- Mode 4: Click Correct Phoneme (Missing Sound) ---
+    function renderPhonemeMissing() {
+        const area = document.getElementById('game-area');
+        
+        // Filter words that actually contain 'i_e' pattern
+        const validWords = words.filter(w => /(i)([a-z])(e)/i.test(w.eng));
+        const target = validWords[Math.floor(Math.random() * validWords.length)];
+        
+        // Replace 'i_e' with underscores (e.g. Ride -> R_d_)
+        const missingWordStr = target.eng.replace(/(i)([a-z])(e)/i, '_$2_');
+        
+        // Distractor sounds for magic 'e' vowels
+        const phonemes = shuffleArray(['a_e', 'o_e', 'u_e', 'i_e / አይ']);
+
+        area.innerHTML = `
+            <div class="fade-in w-full max-w-2xl text-center">
+                <div class="phoneme-badge text-lg mb-6">
+                    Find the missing sound!
+                </div>
+                
+                <div class="bg-white rounded-3xl p-8 shadow-inner border-8 border-purple-100 mb-8">
+                    <img src="${getImageUrl(target.eng)}" alt="Clue" class="w-48 h-48 object-cover mx-auto rounded-2xl mb-6 shadow-md border-4 border-gray-100">
+                    
+                    <div class="flex items-center justify-center gap-4">
+                        <div id="missing-word-display" class="text-7xl font-black text-gray-800 tracking-widest uppercase">
+                            ${missingWordStr}
+                        </div>
+                        ${getAudioButtonHTML(target.eng, 'large')}
+                    </div>
+                    <p class="text-gray-500 mt-2 text-xl font-medium">${target.amh}</p>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 max-w-md mx-auto">
+                    ${phonemes.map(p => `
+                        <button onclick="checkPhonemeMatch(this, '${p}', '${target.eng}')" 
+                                class="phoneme-btn bg-purple-50 hover:bg-purple-100 border-4 border-purple-200 text-purple-700 text-4xl font-black py-4 rounded-2xl shadow-sm transition-transform hover:scale-105 active:scale-95">
+                            ${p.includes('አይ') ? `<span class="highlight-phoneme bg-transparent">${p}</span>` : p}
+                        </button>
+                    `).join('')}
+                </div>
+                
+                <div id="pm-feedback" class="h-16 mt-6 text-2xl font-bold flex items-center justify-center"></div>
+            </div>
+        `;
+        
+        setTimeout(() => playAudio(target.eng), 500);
+    }
+
+    function checkPhonemeMatch(btn, selected, targetWord) {
+        if (document.querySelector('.phoneme-correct')) return; // already solved
+        
+        const feedback = document.getElementById('pm-feedback');
+        const display = document.getElementById('missing-word-display');
+
+        if (selected.includes('i_e')) {
+            // Correct
+            btn.classList.add('phoneme-correct', 'bg-green-500', 'text-white', 'border-green-600', 'scale-110');
+            btn.classList.remove('bg-purple-50', 'text-purple-700');
+            
+            // Fill in the blank (uppercase the word before highlighting)
+            display.innerHTML = highlightI_E(targetWord.toUpperCase());
+            display.classList.add('bounce-in');
+            
+            feedback.innerHTML = `<span class="text-green-600">🎉 Awesome! ${targetWord} has the magic 'e' /i_e/ sound! 🎉</span>`;
+            playAudio("Great job! " + targetWord);
+            
+            setTimeout(renderPhonemeMissing, 2500);
+        } else {
+            // Incorrect
+            btn.classList.add('bg-red-100', 'border-red-400', 'text-red-700', 'animate-shake');
+            playAudio("Try again");
+            feedback.innerHTML = `<span class="text-red-500">Not quite! Listen closely.</span>`;
+            
+            setTimeout(() => {
+                btn.classList.remove('bg-red-100', 'border-red-400', 'text-red-700', 'animate-shake');
+                feedback.innerHTML = '';
+            }, 1000);
+        }
+    }
+
+    // CSS Keyframes injection for animations
+    const styleSheet = document.createElement("style");
+    styleSheet.innerText = `
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-5px); }
+            40%, 80% { transform: translateX(5px); }
+        }
+        .animate-shake { animation: shake 0.4s ease-in-out; }
+    `;
+    document.head.appendChild(styleSheet);
+
+</script>
+</body>
+</html>
